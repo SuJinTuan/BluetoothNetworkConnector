@@ -1,80 +1,189 @@
 # Building an APK for ConnectivityApp
 
-The ConnectivityApp is a React Native application built with Expo. To build an APK, you have several options:
+This guide provides detailed instructions for building an Android APK file from the ConnectivityApp project.
 
-## Option 1: Using EAS Build (Recommended)
+## Prerequisites
 
-EAS (Expo Application Services) is the recommended way to build native binaries for Expo applications.
+Before you begin, make sure you have the following installed:
 
-1. Install EAS CLI:
-```bash
-npm install -g eas-cli
-```
+1. Node.js and npm
+2. Expo CLI: `npm install -g expo-cli`
+3. EAS CLI: `npm install -g eas-cli`
+4. An Expo account (create one at [expo.dev](https://expo.dev/signup))
+5. Android Studio (for testing with an emulator)
 
-2. Log in to your Expo account:
+## Step 1: Log in to your Expo account
+
 ```bash
 eas login
 ```
 
-3. Configure your build:
+## Step 2: Configure EAS Build
+
+Create or modify the `eas.json` file in your project root (this file is already included in the project):
+
+```json
+{
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "android": {
+        "buildType": "app-bundle"
+      }
+    }
+  }
+}
+```
+
+## Step 3: Configure app.json
+
+Ensure your `app.json` file has the necessary Android configuration:
+
+```json
+{
+  "expo": {
+    "name": "ConnectivityApp",
+    "slug": "connectivity-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yourcompany.connectivityapp",
+      "infoPlist": {
+        "NSBluetoothAlwaysUsageDescription": "This app uses Bluetooth to connect to and manage nearby devices.",
+        "NSBluetoothPeripheralUsageDescription": "This app uses Bluetooth to connect to and manage nearby devices."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "package": "com.yourcompany.connectivityapp",
+      "permissions": [
+        "BLUETOOTH",
+        "BLUETOOTH_ADMIN",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "BLUETOOTH_SCAN",
+        "BLUETOOTH_CONNECT",
+        "BLUETOOTH_ADVERTISE",
+        "NEARBY_WIFI_DEVICES",
+        "ACCESS_WIFI_STATE",
+        "CHANGE_WIFI_STATE"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 33,
+            "targetSdkVersion": 33,
+            "buildToolsVersion": "33.0.0"
+          },
+          "ios": {
+            "deploymentTarget": "13.0"
+          }
+        }
+      ]
+    ],
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id" // Replace with your actual Expo project ID
+      }
+    }
+  }
+}
+```
+
+**Note:** Replace `"com.yourcompany.connectivityapp"` with your actual package name and `"your-project-id"` with your Expo project ID.
+
+## Step 4: Install development build
+
 ```bash
 eas build:configure
 ```
 
-4. Build an APK:
+## Step 5: Build the APK
+
+For a development/internal testing build:
+
 ```bash
 eas build -p android --profile preview
 ```
 
-This will start a build on Expo's servers and provide you with a link to download the APK when it's ready.
+This will:
+1. Upload your code to Expo's build servers
+2. Build the APK
+3. Provide a download link when complete
 
-## Option 2: Building Locally (For Development)
+## Step 6: Download and Install
 
-If you need to build locally:
+1. When the build is complete, you'll receive a URL to download the APK.
+2. Download the APK file to your device or transfer it to an Android device.
+3. On your Android device, enable "Install from Unknown Sources" in Settings.
+4. Install the APK by opening the downloaded file.
 
-1. Run the Expo prebuild command:
-```bash
-npx expo prebuild --platform android
-```
+## Testing on an Emulator
 
-2. Navigate to the Android directory:
-```bash
-cd android
-```
+1. Open Android Studio
+2. Open AVD Manager (Android Virtual Device Manager)
+3. Create a new virtual device or use an existing one
+4. Start the emulator
+5. Drag and drop the APK file onto the emulator window to install it
 
-3. Build the debug APK:
-```bash
-./gradlew assembleDebug
-```
+## Troubleshooting
 
-4. Find the APK at:
-```
-android/app/build/outputs/apk/debug/app-debug.apk
-```
+### Build Fails with Permission Errors
 
-## Option 3: Expo Classic Build (Legacy Approach)
+Ensure you've configured the correct permissions in `app.json`. For newer Android versions (API 31+), you need specific Bluetooth and WiFi permissions.
 
-If you're using an older version of Expo that supports classic builds:
+### Cannot Connect to Bluetooth Devices
 
-```bash
-expo build:android -t apk
-```
+Make sure you're testing on a physical device as many emulators don't support Bluetooth properly.
 
-## Additional Configuration
+### APK Size is Too Large
 
-Your app is already properly configured in app.json with:
-- Appropriate package name (`com.yourcompany.connectivityapp`)
-- Required permissions for Bluetooth and WiFi
-- Adaptive icons 
+Consider using App Bundle format for production builds which optimizes the delivery size:
 
-You may want to update the package name in app.json to match your organization's domain name before building.
-
-## Building for Production
-
-For production builds, you will need to:
-1. Generate a keystore for signing your app
-2. Configure build settings in app.json
-3. Use EAS build with a production profile:
 ```bash
 eas build -p android --profile production
 ```
+
+### Build Fails with Library Compatibility Issues
+
+Ensure all libraries are compatible with your SDK version. You may need to update or downgrade certain packages.
+
+## Distribution
+
+For distributing your app via Google Play Store:
+
+1. Create a Google Play Developer account
+2. Create a new application in the Google Play Console
+3. Upload your AAB file (built with the production profile)
+4. Complete the store listing information
+5. Submit for review

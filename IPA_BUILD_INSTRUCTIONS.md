@@ -1,112 +1,209 @@
-# Building an IPA for ConnectivityApp (iOS)
+# Building an IPA for ConnectivityApp
 
-Building an iOS IPA file for ConnectivityApp requires macOS and an Apple Developer account. Here are the steps to build an IPA file for your iOS app:
+This guide provides detailed instructions for building an iOS IPA file from the ConnectivityApp project.
 
 ## Prerequisites
 
-1. **macOS Computer**: You must use a Mac to build iOS apps
-2. **Xcode**: Install the latest version from the Mac App Store
-3. **Apple Developer Account**: Enroll in the Apple Developer Program ($99/year)
-4. **Certificates and Provisioning Profiles**: Set up through Apple Developer Portal
+Before you begin, make sure you have the following:
 
-## Option 1: Using EAS Build (Recommended)
+1. Node.js and npm
+2. Expo CLI: `npm install -g expo-cli`
+3. EAS CLI: `npm install -g eas-cli`
+4. An Expo account (create one at [expo.dev](https://expo.dev/signup))
+5. An Apple Developer account ($99/year subscription)
+6. Xcode installed on a Mac (iOS development requires macOS)
 
-EAS (Expo Application Services) is the easiest way to build iOS apps with Expo:
+## Step 1: Log in to your Expo account
 
-1. Install EAS CLI:
-```bash
-npm install -g eas-cli
-```
-
-2. Log in to your Expo account:
 ```bash
 eas login
 ```
 
-3. Configure your iOS build:
+## Step 2: Configure your Apple Developer account with EAS
+
 ```bash
-eas build:configure
+eas credentials
 ```
 
-4. Build for iOS:
-```bash
-eas build -p ios --profile preview
-```
+Follow the interactive prompts to set up your credentials for iOS development.
 
-This will build your app on Expo's servers and provide a link to download the IPA file.
+## Step 3: Configure EAS Build
 
-## Option 2: Building Locally on macOS
-
-If you need to build the IPA locally:
-
-1. Run Expo prebuild command:
-```bash
-npx expo prebuild --platform ios
-```
-
-2. Open the generated Xcode project:
-```bash
-open ios/ConnectivityApp.xcworkspace
-```
-
-3. In Xcode:
-   - Sign in with your Apple ID under Preferences > Accounts
-   - Select your Team in the Signing & Capabilities tab
-   - Change the Bundle Identifier if needed
-   - Set the device target (e.g., "Any iOS Device")
-
-4. Build the app in Xcode:
-   - Product > Archive
-   - In the Organizer window that appears, click "Distribute App"
-   - Choose "Development", "Ad Hoc", or "App Store Connect" distribution
-   - Follow the prompts to create the IPA
-
-5. Find your IPA in the location Xcode specifies at the end of the process
-
-## iOS-Specific Configuration
-
-Your app.json already contains necessary iOS configuration:
+Create or modify the `eas.json` file in your project root (this file is already included in the project):
 
 ```json
-"ios": {
-  "supportsTablet": true,
-  "bundleIdentifier": "com.yourcompany.connectivityapp",
-  "infoPlist": {
-    "NSBluetoothAlwaysUsageDescription": "This app uses Bluetooth to connect to other devices.",
-    "NSBluetoothPeripheralUsageDescription": "This app uses Bluetooth to connect to other devices.",
-    "NSLocationWhenInUseUsageDescription": "This app uses your location to scan for nearby WiFi networks.",
-    "NSLocationAlwaysUsageDescription": "This app uses your location to scan for nearby WiFi networks.",
-    "UIBackgroundModes": ["bluetooth-central"]
+{
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": false
+      }
+    },
+    "production": {}
   }
 }
 ```
 
-You may need to add additional configurations depending on your specific distribution needs.
+## Step 4: Configure app.json
 
-## Required Apple Developer Account Resources
+Ensure your `app.json` file has the necessary iOS configuration:
 
-1. **Certificates**:
-   - iOS Development Certificate (for development builds)
-   - iOS Distribution Certificate (for App Store or Ad Hoc distribution)
+```json
+{
+  "expo": {
+    "name": "ConnectivityApp",
+    "slug": "connectivity-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yourcompany.connectivityapp",
+      "infoPlist": {
+        "NSBluetoothAlwaysUsageDescription": "This app uses Bluetooth to connect to and manage nearby devices.",
+        "NSBluetoothPeripheralUsageDescription": "This app uses Bluetooth to connect to and manage nearby devices."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "package": "com.yourcompany.connectivityapp",
+      "permissions": [
+        "BLUETOOTH",
+        "BLUETOOTH_ADMIN",
+        "ACCESS_FINE_LOCATION"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "13.0"
+          }
+        }
+      ]
+    ],
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id" // Replace with your actual Expo project ID
+      }
+    }
+  }
+}
+```
 
-2. **Provisioning Profiles**:
-   - Development Provisioning Profile (for testing on devices)
-   - Ad Hoc Provisioning Profile (for distribution to specific devices)
-   - App Store Provisioning Profile (for App Store submission)
+**Note:** Replace `"com.yourcompany.connectivityapp"` with your actual bundle identifier and `"your-project-id"` with your Expo project ID.
 
-3. **App ID**:
-   - Register your bundle identifier in the Apple Developer Portal
+## Step 5: Register Your App ID with Apple
 
-## Important Notes for iOS Development
+1. Go to [Apple Developer Portal](https://developer.apple.com/account/resources/identifiers/list)
+2. Click the "+" button to register a new identifier
+3. Select "App IDs" and click "Continue"
+4. Enter a description and your bundle identifier (e.g., `com.yourcompany.connectivityapp`)
+5. Select the capabilities your app needs (Bluetooth, etc.)
+6. Click "Continue" and then "Register"
 
-1. **Physical iOS Device Testing**: To test on a physical device, you need to register the device's UDID in your Apple Developer account
+## Step 6: Create a Provisioning Profile
 
-2. **Bluetooth/WiFi Permissions**: iOS has strict requirements for Bluetooth and WiFi access. Your app must include proper usage descriptions in Info.plist (already configured in app.json)
+1. Go to [Provisioning Profiles](https://developer.apple.com/account/resources/profiles/list) in the Apple Developer Portal
+2. Click the "+" button to create a new profile
+3. Select "iOS App Development" for testing or "App Store" for distribution
+4. Select the App ID you just created
+5. Select the certificate to use
+6. Select devices (for development profile)
+7. Enter a profile name
+8. Generate and download the profile
 
-3. **Distribution Options**:
-   - **Development**: For testing on registered devices only
-   - **Ad Hoc**: For distribution to specific registered devices without the App Store
-   - **TestFlight**: For beta testing through the App Store
-   - **App Store**: For public distribution
+## Step 7: Build the IPA
 
-4. **Simulator Builds**: You can build for the iOS Simulator during development, but these builds cannot be installed on physical devices
+For a development build that can be installed via TestFlight:
+
+```bash
+eas build -p ios --profile preview
+```
+
+This will:
+1. Upload your code to Expo's build servers
+2. Build the IPA
+3. Provide a download link when complete
+
+## Step 8: Distribution via TestFlight
+
+1. Log in to [App Store Connect](https://appstoreconnect.apple.com/)
+2. Go to "My Apps" and select your app (or create a new one)
+3. Go to the "TestFlight" tab
+4. Upload the build (this can also be done automatically by EAS if configured)
+5. Add test information
+6. Add testers (internal or external)
+7. Wait for Apple's review (for external testers)
+
+## Step 9: App Store Submission
+
+1. In App Store Connect, go to the "App Store" tab
+2. Fill in all required metadata:
+   - Description
+   - Keywords
+   - Support URL
+   - Marketing URL (optional)
+   - Privacy Policy URL
+3. Add screenshots for each device type
+4. Select the build you want to submit
+5. Complete the "App Review Information" section
+6. Set pricing and availability
+7. Submit for review
+
+## Testing on a Physical Device (Developer Mode)
+
+1. Register your device in the Apple Developer Portal
+2. Install the provisioning profile on your device
+3. Connect your device to your Mac
+4. Build and run the app using Xcode
+
+## Troubleshooting
+
+### Build Fails with Certificate Errors
+
+Use the following command to troubleshoot and fix certificate issues:
+
+```bash
+eas credentials
+```
+
+### "App Not Available" when Installing via TestFlight
+
+Ensure your App ID and provisioning profile are correctly set up. Also, make sure the device is added to the provisioning profile if you're using an Ad Hoc distribution.
+
+### Missing Bluetooth Functionality
+
+Ensure you've added the necessary Bluetooth permissions to the `info.plist` section in your `app.json`.
+
+### Build Fails with Missing Entitlements
+
+If your app uses specific capabilities (like Bluetooth, background modes, etc.), make sure they're properly configured in both your `app.json` and in the Apple Developer Portal for your App ID.
+
+## Additional Resources
+
+- [Expo EAS Build Documentation](https://docs.expo.dev/build/introduction/)
+- [Apple Developer Program](https://developer.apple.com/programs/)
+- [TestFlight Overview](https://developer.apple.com/testflight/)
+- [App Store Review Guidelines](https://developer.apple.com/app-store/review/guidelines/)
