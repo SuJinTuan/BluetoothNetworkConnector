@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "ConnectivityApp",
+    "slug": "connectivity-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./generated-icon.png",
+    "splash": {
+      "image": "./generated-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yourcompany.connectivityapp",
+      "infoPlist": {
+        "NSBluetoothAlwaysUsageDescription": "This app uses Bluetooth to connect to other devices.",
+        "NSBluetoothPeripheralUsageDescription": "This app uses Bluetooth to connect to other devices.",
+        "NSLocationWhenInUseUsageDescription": "This app uses your location to scan for nearby WiFi networks.",
+        "NSLocationAlwaysUsageDescription": "This app uses your location to scan for nearby WiFi networks.",
+        "UIBackgroundModes": ["bluetooth-central"]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./generated-icon.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "package": "com.yourcompany.connectivityapp",
+      "permissions": [
+        "BLUETOOTH",
+        "BLUETOOTH_ADMIN",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "BLUETOOTH_SCAN",
+        "BLUETOOTH_CONNECT",
+        "ACCESS_WIFI_STATE",
+        "CHANGE_WIFI_STATE"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ]
+    ]
+  }
+}
