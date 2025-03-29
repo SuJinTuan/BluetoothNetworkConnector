@@ -18,6 +18,45 @@ export const ExportServiceProvider = ({ children }) => {
     error: null,
   });
 
+  // Function to export the current H5 content (from ZIP)
+  const exportH5Content = useCallback(async (extractedPath, targetName = 'H5Content') => {
+    try {
+      if (!extractedPath) {
+        throw new Error('No extracted H5 content to export');
+      }
+
+      setExportState(prev => ({ ...prev, isExporting: true, error: null }));
+
+      // Define the output path for the ZIP file
+      const zipPath = `${FileSystem.documentDirectory}${targetName}_${Date.now()}.zip`;
+      
+      // Create a ZIP from the extracted content
+      await zip(extractedPath, zipPath);
+      
+      // Share the ZIP file if possible
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(zipPath);
+      }
+      
+      setExportState(prev => ({
+        ...prev,
+        isExporting: false,
+        exportedPath: zipPath,
+        error: null
+      }));
+      
+      return zipPath;
+    } catch (error) {
+      console.error('Error exporting H5 content:', error);
+      setExportState(prev => ({
+        ...prev,
+        isExporting: false,
+        error: error.message || 'Failed to export H5 content',
+      }));
+      throw error;
+    }
+  }, []);
+
   // Function to export the code
   const exportCode = useCallback(async () => {
     try {
@@ -39,15 +78,18 @@ import { StatusBar } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import AppNavigator from './src/navigation/AppNavigator';
 import { ConnectionProvider } from './src/contexts/ConnectionContext';
+import { ExportServiceProvider } from './src/services/ExportService';
 
 export default function App() {
   return (
     <SafeAreaProvider>
       <ConnectionProvider>
-        <NavigationContainer>
-          <StatusBar barStyle="dark-content" />
-          <AppNavigator />
-        </NavigationContainer>
+        <ExportServiceProvider>
+          <NavigationContainer>
+            <StatusBar barStyle="dark-content" />
+            <AppNavigator />
+          </NavigationContainer>
+        </ExportServiceProvider>
       </ConnectionProvider>
     </SafeAreaProvider>
   );
@@ -467,6 +509,7 @@ MIT
 
   const value = {
     exportCode,
+    exportH5Content,
     exportState,
   };
 

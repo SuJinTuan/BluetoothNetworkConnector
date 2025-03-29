@@ -3,7 +3,12 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, KeyboardAvo
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { Feather } from '@expo/vector-icons';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
 import { useConnection } from '../contexts/ConnectionContext';
+import { useExportService } from '../services/ExportService';
+import WebViewBridge from '../services/WebViewBridge';
+import ZipService from '../services/ZipService';
 
 const WebViewScreen = () => {
   const webViewRef = useRef(null);
@@ -13,6 +18,7 @@ const WebViewScreen = () => {
   const [logs, setLogs] = useState([]);
   const [messageToSend, setMessageToSend] = useState('');
   const { bluetoothState, wifiState } = useConnection();
+  const { exportH5Content, exportState } = useExportService();
 
   // Default HTML content with the bridge JavaScript
   const defaultHTML = `
@@ -166,6 +172,88 @@ const WebViewScreen = () => {
   </html>
   `;
 
+  useEffect(() => {
+    // Set up the WebViewBridge when the component mounts
+    if (webViewRef.current) {
+      WebViewBridge.setWebViewRef(webViewRef.current);
+    }
+    
+    // Clean up when the component unmounts
+    return () => {
+      WebViewBridge.reset();
+    };
+  }, [webViewRef.current]);
+
+  // Function to pick and unzip a file
+  const pickAndUnzipFile = async () => {
+    try {
+      setIsLoading(true);
+      addLog('Selecting a ZIP file...');
+      
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/zip',
+        copyToCacheDirectory: true,
+      });
+      
+      if (result.canceled) {
+        addLog('File selection canceled');
+        setIsLoading(false);
+        return;
+      }
+      
+      const fileUri = result.assets[0].uri;
+      addLog(`Selected file: ${result.assets[0].name}`);
+      
+      // Unzip the file
+      addLog('Unzipping file...');
+      const extractedPath = await ZipService.unzipFromUri(fileUri);
+      
+      // Find all HTML files in the extracted directory (recursively)
+      addLog('Searching for HTML files...');
+      const htmlFiles = await ZipService.findHtmlFiles(extractedPath);
+      
+      if (htmlFiles.length === 0) {
+        throw new Error('No HTML files found in the ZIP package');
+      }
+      
+      // Find the main HTML file (index.html or first HTML file)
+      const mainHtmlFile = await ZipService.findMainHtmlFile(extractedPath);
+      
+      if (!mainHtmlFile) {
+        throw new Error('Failed to determine main HTML file');
+      }
+      
+      // Read the HTML content
+      const htmlContent = await ZipService.readHtmlFile(mainHtmlFile);
+      
+      // Get the base directory for the HTML file
+      const baseDir = mainHtmlFile.substring(0, mainHtmlFile.lastIndexOf('/') + 1);
+      
+      // Fix relative paths in the HTML content
+      const fixedHtmlContent = ZipService.fixHtmlPaths(htmlContent, baseDir);
+      
+      // Set the extracted content path in the WebViewBridge
+      WebViewBridge.setExtractedContentPath(extractedPath, mainHtmlFile.split('/').pop());
+      
+      // Get file URL for WebView
+      const fileUrl = ZipService.getFileUrl(mainHtmlFile);
+      
+      // Load the extracted HTML file
+      addLog(`Loading extracted file: ${mainHtmlFile.split('/').pop()}`);
+      addLog(`Found ${htmlFiles.length} HTML file(s) in the package`);
+      
+      // Choose between loading the URL directly or using the fixed content
+      // Direct URL is simpler but fixed content handles relative path issues better
+      setCurrentUrl(fileUrl);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error picking or unzipping file:', error);
+      setIsLoading(false);
+      Alert.alert('Error', `Failed to process ZIP file: ${error.message}`);
+      addLog(`Error: ${error.message}`);
+    }
+  };
+
   // Handle messages from WebView
   const handleWebViewMessage = (event) => {
     try {
@@ -182,19 +270,28 @@ const WebViewScreen = () => {
           wifiState.connectedNetwork.SSID : null;
 
         // Send status back to WebView
-        const statusScript = `
-          window.connectivityBridge.updateConnectionStatus(
-            ${bluetoothConnected}, 
-            ${wifiConnected}, 
-            ${bluetoothDevice ? `"${bluetoothDevice}"` : null}, 
-            ${wifiNetwork ? `"${wifiNetwork}"` : null}
-          );
-        `;
-        webViewRef.current.injectJavaScript(statusScript);
+        WebViewBridge.updateConnectionStatus(
+          bluetoothConnected,
+          wifiConnected, 
+          bluetoothDevice,
+          wifiNetwork
+        );
         
         addLog('Sent connection status to H5 page');
       } else if (data.type === 'message') {
         addLog(`Received from H5: ${data.content}`);
+      } else if (data.type === 'requestBluetoothScan') {
+        addLog('H5 requested Bluetooth scan');
+        // You would trigger Bluetooth scan here
+      } else if (data.type === 'requestWifiScan') {
+        addLog('H5 requested WiFi scan');
+        // You would trigger WiFi scan here
+      } else if (data.type === 'connectToBluetoothDevice') {
+        addLog(`H5 requested to connect to Bluetooth device: ${data.deviceId}`);
+        // You would connect to the Bluetooth device here
+      } else if (data.type === 'connectToWifiNetwork') {
+        addLog(`H5 requested to connect to WiFi network: ${data.ssid}`);
+        // You would connect to the WiFi network here
       }
     } catch (error) {
       console.error('Error handling WebView message:', error);
@@ -240,6 +337,45 @@ const WebViewScreen = () => {
     setCurrentUrl('');
     // The empty URL will trigger the renderLoading which will show our default HTML
   };
+  
+  // Export the current H5 content
+  const handleExportH5 = async () => {
+    try {
+      const extractedPath = ZipService.getCurrentExtractedFolder();
+      
+      if (!extractedPath) {
+        Alert.alert(
+          'No H5 Content', 
+          'Please load an H5 package first before exporting.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+      
+      addLog('Exporting current H5 content...');
+      setIsLoading(true);
+      
+      const zipPath = await exportH5Content(extractedPath);
+      
+      setIsLoading(false);
+      addLog(`H5 content exported to: ${zipPath}`);
+      
+      Alert.alert(
+        'Export Successful', 
+        'The H5 content has been exported and is ready to share.',
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      console.error('Error exporting H5 content:', error);
+      setIsLoading(false);
+      Alert.alert(
+        'Export Failed', 
+        error.message || 'There was a problem exporting the H5 content.',
+        [{ text: 'OK' }]
+      );
+      addLog(`Error: ${error.message}`);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -269,13 +405,40 @@ const WebViewScreen = () => {
       </View>
 
       <View style={styles.buttonContainer}>
-        <TouchableOpacity 
-          style={styles.demoButton} 
-          onPress={loadDemoPage}
-        >
-          <Feather name="code" size={20} color="#ffffff" />
-          <Text style={styles.buttonText}>Load Demo Page</Text>
-        </TouchableOpacity>
+        <View style={styles.buttonRow}>
+          <TouchableOpacity 
+            style={styles.demoButton} 
+            onPress={loadDemoPage}
+          >
+            <Feather name="code" size={20} color="#ffffff" />
+            <Text style={styles.buttonText}>Load Demo Page</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.zipButton} 
+            onPress={pickAndUnzipFile}
+          >
+            <Feather name="file-plus" size={20} color="#ffffff" />
+            <Text style={styles.buttonText}>Unzip H5 Package</Text>
+          </TouchableOpacity>
+        </View>
+        
+        <View style={[styles.buttonRow, {marginTop: 8}]}>
+          <TouchableOpacity 
+            style={styles.exportButton} 
+            onPress={handleExportH5}
+            disabled={exportState.isExporting || !ZipService.getCurrentExtractedFolder()}
+          >
+            {exportState.isExporting ? (
+              <ActivityIndicator color="#ffffff" size="small" />
+            ) : (
+              <>
+                <Feather name="download" size={20} color="#ffffff" />
+                <Text style={styles.buttonText}>Export H5 Content</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.webViewContainer}>
@@ -383,6 +546,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
   demoButton: {
     backgroundColor: '#34a853',
     flexDirection: 'row',
@@ -390,6 +557,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 12,
     borderRadius: 8,
+    flex: 1,
+    marginRight: 8,
+  },
+  zipButton: {
+    backgroundColor: '#db4437',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 8,
+    flex: 1,
+    marginLeft: 8,
+  },
+  exportButton: {
+    backgroundColor: '#4285F4',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    borderRadius: 8,
+    flex: 1,
   },
   buttonText: {
     color: '#ffffff',

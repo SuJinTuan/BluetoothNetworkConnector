@@ -9,6 +9,8 @@ class WebViewBridge {
     this._webViewRef = null;
     this._messageHandlers = {};
     this._isConnected = false;
+    this._extractedContentPath = null;
+    this._currentH5Path = null;
   }
 
   /**
@@ -177,12 +179,113 @@ class WebViewBridge {
   }
 
   /**
+   * Set the current H5 content path from extracted ZIP
+   * @param {string} path - Path to the extracted content
+   * @param {string} mainHtmlFile - Main HTML file to load
+   * @returns {string} - Full path to the HTML file
+   */
+  setExtractedContentPath(path, mainHtmlFile = 'index.html') {
+    this._extractedContentPath = path;
+    
+    // Check if the main HTML file already includes the path
+    if (mainHtmlFile.includes('/')) {
+      this._currentH5Path = mainHtmlFile;
+    } else {
+      this._currentH5Path = `${path}/${mainHtmlFile}`;
+    }
+    
+    return this._currentH5Path;
+  }
+  
+  /**
+   * Get a properly formatted file URL for WebView
+   * @param {string} filePath - Path to the file
+   * @returns {string} - URL that can be used in WebView
+   */
+  getFileUrl(filePath) {
+    if (!filePath) return null;
+    
+    // Handle file:// protocol
+    if (filePath.startsWith('file://')) {
+      return filePath;
+    }
+    
+    return `file://${filePath}`;
+  }
+
+  /**
+   * Get the current H5 path
+   * @returns {string|null} - Current H5 path or null if not set
+   */
+  getCurrentH5Path() {
+    return this._currentH5Path;
+  }
+
+  /**
+   * Get the extracted content path
+   * @returns {string|null} - Extracted content path or null if not set
+   */
+  getExtractedContentPath() {
+    return this._extractedContentPath;
+  }
+
+  /**
+   * Update device list in the WebView
+   * @param {Array} devices - List of Bluetooth devices
+   * @returns {boolean} - True if update was successful
+   */
+  updateDeviceList(devices) {
+    if (!this.isConnected()) return false;
+    
+    const script = `
+      if (window.connectivityBridge && typeof window.connectivityBridge.updateDeviceList === 'function') {
+        window.connectivityBridge.updateDeviceList(${JSON.stringify(devices)});
+      }
+      true;
+    `;
+    
+    try {
+      this._webViewRef.injectJavaScript(script);
+      return true;
+    } catch (error) {
+      console.error('Error updating device list in WebView:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Update network list in the WebView
+   * @param {Array} networks - List of WiFi networks
+   * @returns {boolean} - True if update was successful
+   */
+  updateNetworkList(networks) {
+    if (!this.isConnected()) return false;
+    
+    const script = `
+      if (window.connectivityBridge && typeof window.connectivityBridge.updateNetworkList === 'function') {
+        window.connectivityBridge.updateNetworkList(${JSON.stringify(networks)});
+      }
+      true;
+    `;
+    
+    try {
+      this._webViewRef.injectJavaScript(script);
+      return true;
+    } catch (error) {
+      console.error('Error updating network list in WebView:', error);
+      return false;
+    }
+  }
+
+  /**
    * Reset the bridge
    */
   reset() {
     this._webViewRef = null;
     this._isConnected = false;
     this._messageHandlers = {};
+    this._extractedContentPath = null;
+    this._currentH5Path = null;
   }
 }
 
