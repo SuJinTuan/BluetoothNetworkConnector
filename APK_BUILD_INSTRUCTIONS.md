@@ -2,6 +2,13 @@
 
 This guide provides detailed instructions for building an Android APK file from the ConnectivityApp project.
 
+> **Quick Local Build**: For a simple one-click local APK build, use the provided scripts:
+> - On Mac/Linux: `./build_apk.sh`
+> - On Windows: `build_apk.bat`
+> 
+> These scripts will handle all the steps below automatically and save the APK to an "outputs" folder.
+> Continue reading only if you need a custom build or want to understand the process in detail.
+
 ## Prerequisites
 
 Before you begin, make sure you have the following installed:

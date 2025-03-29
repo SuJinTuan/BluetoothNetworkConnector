@@ -55,6 +55,30 @@ After starting the development server:
 
 ## Building for Production
 
+### Option 1: One-Click Local APK Build (Android)
+
+For Android, you can build the APK locally (no Expo account required):
+
+#### For Mac/Linux users:
+```bash
+./build_apk.sh
+```
+
+#### For Windows users:
+```
+build_apk.bat
+```
+
+These scripts will:
+1. Check for required dependencies (Java JDK, Android SDK)
+2. Create Android native project files if needed
+3. Build a debug APK using Gradle
+4. Save the APK to an "outputs" folder in the project root
+
+### Option 2: Build with Expo Application Services
+
+For production builds or iOS packages:
+
 - For Android: See [APK_BUILD_INSTRUCTIONS.md](APK_BUILD_INSTRUCTIONS.md)
 - For iOS: See [IPA_BUILD_INSTRUCTIONS.md](IPA_BUILD_INSTRUCTIONS.md)
 
