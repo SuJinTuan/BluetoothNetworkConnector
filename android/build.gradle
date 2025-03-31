@@ -11,8 +11,14 @@ buildscript {
         ndkVersion = "26.1.10909125"
     }
     repositories {
+        // Primary repositories
         google()
         mavenCentral()
+        
+        // Backup repositories for regions with connectivity issues
+        maven { url 'https://maven.aliyun.com/repository/google' }
+        maven { url 'https://maven.aliyun.com/repository/public' }
+        maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
     }
     dependencies {
         classpath('com.android.tools.build:gradle')
@@ -34,8 +40,26 @@ allprojects {
             url(new File(['node', '--print', "require.resolve('jsc-android/package.json', { paths: [require.resolve('react-native/package.json')] })"].execute(null, rootDir).text.trim(), '../dist'))
         }
 
-        google()
-        mavenCentral()
-        maven { url 'https://www.jitpack.io' }
+        // Primary repositories
+        google() { metadataSources { mavenPom(); gradleMetadata() } }
+        mavenCentral() { metadataSources { mavenPom(); gradleMetadata() } }
+        maven { 
+            url 'https://www.jitpack.io'
+            metadataSources { mavenPom(); gradleMetadata() }
+        }
+        
+        // Backup repositories for regions with connectivity issues
+        maven { 
+            url 'https://maven.aliyun.com/repository/google'
+            metadataSources { mavenPom(); gradleMetadata() }
+        }
+        maven { 
+            url 'https://maven.aliyun.com/repository/public'
+            metadataSources { mavenPom(); gradleMetadata() }
+        }
+        maven { 
+            url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/'
+            metadataSources { mavenPom(); gradleMetadata() }
+        }
     }
 }

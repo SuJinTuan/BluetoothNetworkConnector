@@ -6,7 +6,12 @@ This guide provides detailed instructions for building an Android APK file from 
 > - On Mac/Linux: `./build_apk.sh`
 > - On Windows: `build_apk.bat`
 > 
+> **For slow or unstable internet connections**:
+> - On Mac/Linux: `./build_offline.sh`
+> - On Windows: `build_offline.bat`
+> 
 > These scripts will handle all the steps below automatically and save the APK to an "outputs" folder.
+> See `OFFLINE_BUILD_GUIDE.md` for more details about building with limited connectivity.
 > Continue reading only if you need a custom build or want to understand the process in detail.
 
 ## Prerequisites
@@ -184,6 +189,15 @@ eas build -p android --profile production
 ### Build Fails with Library Compatibility Issues
 
 Ensure all libraries are compatible with your SDK version. You may need to update or downgrade certain packages.
+
+### Gradle Download or Network Timeout Issues
+
+If you're experiencing timeouts or network connectivity issues during the build:
+
+1. Try using the offline build scripts: `build_offline.sh` or `build_offline.bat`
+2. Refer to the `OFFLINE_BUILD_GUIDE.md` for detailed solutions
+3. Consider manually downloading Gradle distribution and configuring offline mode
+4. Try using a VPN or network proxy if certain domains are blocked
 
 ## Distribution
 

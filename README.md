@@ -69,11 +69,22 @@ For Android, you can build the APK locally (no Expo account required):
 build_apk.bat
 ```
 
+#### For slow/unreliable network connections:
+```bash
+# Mac/Linux
+./build_offline.sh
+
+# Windows
+build_offline.bat
+```
+
 These scripts will:
 1. Check for required dependencies (Java JDK, Android SDK)
 2. Create Android native project files if needed
 3. Build a debug APK using Gradle
 4. Save the APK to an "outputs" folder in the project root
+
+See [OFFLINE_BUILD_GUIDE.md](OFFLINE_BUILD_GUIDE.md) for detailed information about building with limited connectivity.
 
 ### Option 2: Build with Expo Application Services
 
@@ -99,3 +110,10 @@ For production builds or iOS packages:
 - `WebViewBridge.js` - Enables communication between React Native and H5 pages
 - `ZipService.js` - Processes ZIP packages for H5 content
 - `ExportService.js` - Manages content export functionality
+
+## Additional Documentation
+
+- [APK_BUILD_INSTRUCTIONS.md](APK_BUILD_INSTRUCTIONS.md) - Detailed guide for building Android packages
+- [IPA_BUILD_INSTRUCTIONS.md](IPA_BUILD_INSTRUCTIONS.md) - Guide for building iOS packages
+- [USB_DEBUGGING.md](USB_DEBUGGING.md) - Instructions for debugging on physical devices
+- [OFFLINE_BUILD_GUIDE.md](OFFLINE_BUILD_GUIDE.md) - Solutions for building in environments with limited connectivity
