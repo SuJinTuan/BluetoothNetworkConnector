@@ -1,210 +1,177 @@
-# Building an APK for ConnectivityApp
+# APK Build Instructions
 
-This guide provides detailed instructions for building an Android APK file from the ConnectivityApp project.
-
-> **Quick Local Build**: For a simple one-click local APK build, use the provided scripts:
-> - On Mac/Linux: `./build_apk.sh`
-> - On Windows: `build_apk.bat`
-> 
-> **For slow or unstable internet connections**:
-> - On Mac/Linux: `./build_offline.sh`
-> - On Windows: `build_offline.bat`
-> 
-> These scripts will handle all the steps below automatically and save the APK to an "outputs" folder.
-> See `OFFLINE_BUILD_GUIDE.md` for more details about building with limited connectivity.
-> Continue reading only if you need a custom build or want to understand the process in detail.
+This document provides detailed instructions for building an Android APK from this project. These instructions are designed to be beginner-friendly while also offering solutions for common build issues.
 
 ## Prerequisites
 
-Before you begin, make sure you have the following installed:
+Before you begin, ensure you have the following installed:
 
-1. Node.js and npm
-2. Expo CLI: `npm install -g expo-cli`
-3. EAS CLI: `npm install -g eas-cli`
-4. An Expo account (create one at [expo.dev](https://expo.dev/signup))
-5. Android Studio (for testing with an emulator)
+- [Node.js](https://nodejs.org/) (LTS version recommended)
+- [Java Development Kit (JDK)](https://adoptium.net/) (version 11 or 17 recommended)
+- [Android Studio](https://developer.android.com/studio) with Android SDK
+- [Git](https://git-scm.com/downloads) (for version control)
 
-## Step 1: Log in to your Expo account
+## Environment Setup
 
-```bash
-eas login
+1. **Android SDK Setup**:
+   - Launch Android Studio
+   - Go to Settings/Preferences > Appearance & Behavior > System Settings > Android SDK
+   - In the SDK Platforms tab, install Android 13 (API Level 33) or later
+   - In the SDK Tools tab, install:
+     - Android SDK Build-Tools
+     - Android SDK Command-line Tools
+     - Android Emulator
+     - Android SDK Platform-Tools
+
+2. **Environment Variables**:
+   - Set ANDROID_HOME to point to your Android SDK location
+   - Add platform-tools and tools to your PATH
+
+## Standard Build Process
+
+### Using the Provided Build Scripts
+
+This project includes convenient build scripts that automate the APK generation process:
+
+#### On Windows:
+```
+.\build_apk.bat
 ```
 
-## Step 2: Configure EAS Build
-
-Create or modify the `eas.json` file in your project root (this file is already included in the project):
-
-```json
-{
-  "build": {
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal"
-    },
-    "preview": {
-      "distribution": "internal",
-      "android": {
-        "buildType": "apk"
-      }
-    },
-    "production": {
-      "android": {
-        "buildType": "app-bundle"
-      }
-    }
-  }
-}
+#### On macOS/Linux:
+```
+./build_apk.sh
 ```
 
-## Step 3: Configure app.json
+The generated APK will be available in the `build` directory.
 
-Ensure your `app.json` file has the necessary Android configuration:
+### Manual Build Process
 
-```json
-{
-  "expo": {
-    "name": "ConnectivityApp",
-    "slug": "connectivity-app",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "updates": {
-      "fallbackToCacheTimeout": 0
-    },
-    "assetBundlePatterns": ["**/*"],
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.yourcompany.connectivityapp",
-      "infoPlist": {
-        "NSBluetoothAlwaysUsageDescription": "This app uses Bluetooth to connect to and manage nearby devices.",
-        "NSBluetoothPeripheralUsageDescription": "This app uses Bluetooth to connect to and manage nearby devices."
-      }
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FFFFFF"
-      },
-      "package": "com.yourcompany.connectivityapp",
-      "permissions": [
-        "BLUETOOTH",
-        "BLUETOOTH_ADMIN",
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_BACKGROUND_LOCATION",
-        "BLUETOOTH_SCAN",
-        "BLUETOOTH_CONNECT",
-        "BLUETOOTH_ADVERTISE",
-        "NEARBY_WIFI_DEVICES",
-        "ACCESS_WIFI_STATE",
-        "CHANGE_WIFI_STATE"
-      ]
-    },
-    "plugins": [
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "compileSdkVersion": 33,
-            "targetSdkVersion": 33,
-            "buildToolsVersion": "33.0.0"
-          },
-          "ios": {
-            "deploymentTarget": "13.0"
-          }
-        }
-      ]
-    ],
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
-    "extra": {
-      "eas": {
-        "projectId": "your-project-id" // Replace with your actual Expo project ID
-      }
-    }
-  }
-}
-```
+If you prefer to build manually:
 
-**Note:** Replace `"com.yourcompany.connectivityapp"` with your actual package name and `"your-project-id"` with your Expo project ID.
+1. Install project dependencies:
+   ```
+   npm install
+   ```
 
-## Step 4: Install development build
+2. Navigate to the Android directory:
+   ```
+   cd android
+   ```
 
-```bash
-eas build:configure
-```
+3. Clean any previous builds:
+   ```
+   ./gradlew clean
+   ```
 
-## Step 5: Build the APK
+4. Build the debug APK:
+   ```
+   ./gradlew assembleDebug
+   ```
 
-For a development/internal testing build:
+5. The generated APK will be located at:
+   ```
+   android/app/build/outputs/apk/debug/app-debug.apk
+   ```
 
-```bash
-eas build -p android --profile preview
-```
+## Troubleshooting Common Issues
 
-This will:
-1. Upload your code to Expo's build servers
-2. Build the APK
-3. Provide a download link when complete
+### Build Failures
 
-## Step 6: Download and Install
+1. **Dependencies Issues**:
+   - Try running `npm install` again
+   - Delete `node_modules` and run `npm install` with the `--force` option
 
-1. When the build is complete, you'll receive a URL to download the APK.
-2. Download the APK file to your device or transfer it to an Android device.
-3. On your Android device, enable "Install from Unknown Sources" in Settings.
-4. Install the APK by opening the downloaded file.
+2. **Gradle Issues**:
+   - Use the `build_debug.sh` or `build_debug.bat` script for more verbose output
+   - Update Gradle in `android/gradle/wrapper/gradle-wrapper.properties`
 
-## Testing on an Emulator
+3. **SDK Version Conflicts**:
+   - Check that your installed SDK versions match those in `android/build.gradle`
+   - Update `compileSdkVersion`, `minSdkVersion`, and `targetSdkVersion` as needed
 
-1. Open Android Studio
-2. Open AVD Manager (Android Virtual Device Manager)
-3. Create a new virtual device or use an existing one
-4. Start the emulator
-5. Drag and drop the APK file onto the emulator window to install it
+4. **Memory Issues**:
+   - Increase Gradle memory by adding the following to `android/gradle.properties`:
+     ```
+     org.gradle.jvmargs=-Xmx4096m -XX:MaxPermSize=4096m -XX:+HeapDumpOnOutOfMemoryError
+     ```
 
-## Troubleshooting
+5. **Multidex Issues**:
+   - The project is already configured for multidex support
+   - If needed, verify the multidex configuration in `android/app/build.gradle`
 
-### Build Fails with Permission Errors
+### Offline Build
 
-Ensure you've configured the correct permissions in `app.json`. For newer Android versions (API 31+), you need specific Bluetooth and WiFi permissions.
+If you're experiencing internet connectivity issues during build:
 
-### Cannot Connect to Bluetooth Devices
+1. Use the offline build scripts:
+   ```
+   ./build_offline.sh   # For macOS/Linux
+   build_offline.bat    # For Windows
+   ```
 
-Make sure you're testing on a physical device as many emulators don't support Bluetooth properly.
+2. See `OFFLINE_BUILD_GUIDE.md` for more details on offline building.
 
-### APK Size is Too Large
+## Installing the APK
 
-Consider using App Bundle format for production builds which optimizes the delivery size:
+### On an Emulator
 
-```bash
-eas build -p android --profile production
-```
+1. Start your Android emulator from Android Studio
+2. Install via command line:
+   ```
+   adb install ./build/app-debug.apk
+   ```
 
-### Build Fails with Library Compatibility Issues
+### On a Physical Device
 
-Ensure all libraries are compatible with your SDK version. You may need to update or downgrade certain packages.
+1. Enable USB debugging on your device:
+   - Go to Settings > About phone > Tap "Build number" 7 times
+   - Go back to Settings > System > Advanced > Developer options
+   - Enable USB debugging
 
-### Gradle Download or Network Timeout Issues
+2. Connect your device to your computer via USB
 
-If you're experiencing timeouts or network connectivity issues during the build:
+3. Install the APK:
+   ```
+   adb install ./build/app-debug.apk
+   ```
 
-1. Try using the offline build scripts: `build_offline.sh` or `build_offline.bat`
-2. Refer to the `OFFLINE_BUILD_GUIDE.md` for detailed solutions
-3. Consider manually downloading Gradle distribution and configuring offline mode
-4. Try using a VPN or network proxy if certain domains are blocked
+## Building for Release
 
-## Distribution
+To create a release (signed) version:
 
-For distributing your app via Google Play Store:
+1. Create a signing key (if you don't have one):
+   ```
+   keytool -genkey -v -keystore my-release-key.keystore -alias my-key-alias -keyalg RSA -keysize 2048 -validity 10000
+   ```
 
-1. Create a Google Play Developer account
-2. Create a new application in the Google Play Console
-3. Upload your AAB file (built with the production profile)
-4. Complete the store listing information
-5. Submit for review
+2. Place the keystore file in `android/app`
+
+3. Configure signing in `android/app/build.gradle`:
+   ```gradle
+   signingConfigs {
+       release {
+           storeFile file('my-release-key.keystore')
+           storePassword 'your-store-password'
+           keyAlias 'my-key-alias'
+           keyPassword 'your-key-password'
+       }
+   }
+   ```
+
+4. Build the release APK:
+   ```
+   cd android
+   ./gradlew assembleRelease
+   ```
+
+5. The signed APK will be at:
+   ```
+   android/app/build/outputs/apk/release/app-release.apk
+   ```
+
+## Additional Resources
+
+- See `USB_DEBUGGING.md` for detailed information on USB debugging
+- See `OFFLINE_BUILD_GUIDE.md` for offline building instructions
+- See `build_debug.sh` or `build_debug.bat` for detailed build debugging

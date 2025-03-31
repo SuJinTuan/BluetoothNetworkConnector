@@ -1,126 +1,189 @@
-# USB Debugging for ConnectivityApp
+# USB Debugging Guide
 
-This guide provides instructions to set up USB debugging for the ConnectivityApp, allowing you to connect your physical device via USB for testing.
+This guide will help you set up and troubleshoot USB debugging for the ConnectivityApp on Android and iOS devices. USB debugging is essential for testing Bluetooth and WiFi functionality on physical devices, as these features are not fully supported in emulators/simulators.
 
-## Prerequisites
+## Why USB Debugging is Important
 
-- Android device with Android 5.0 or higher
-- USB cable
-- Android Debug Bridge (adb) installed on your development machine
-- Expo Go app installed on your Android device
+For this app in particular, USB debugging is critical because:
 
-## Setup Steps
+1. Bluetooth and WiFi functions require access to actual hardware
+2. Device-specific issues may only appear on physical devices
+3. You can test on multiple Android OS versions and device manufacturers
+4. Performance testing is much more accurate on real devices
 
-### 1. Enable Developer Options on Your Android Device
+## Android USB Debugging Setup
 
-1. Open **Settings** on your Android device
-2. Scroll down and tap **About phone** (or **About device**)
-3. Find the **Build number** entry
-4. Tap on **Build number** 7 times until you see a message that you are now a developer
-5. Go back to the main **Settings** screen
-6. You should now see **Developer options** (usually near the bottom)
+### Prerequisites
 
-### 2. Enable USB Debugging on Your Android Device
+- [Android Studio](https://developer.android.com/studio) installed
+- USB cable (preferably the one that came with your device)
+- Android device with Developer Options enabled
 
-1. Open **Settings** on your Android device
-2. Navigate to **System** > **Developer options** (location may vary depending on your device)
-3. Turn on the **USB debugging** toggle
-4. Connect your device to your computer via USB
-5. You may see a prompt on your device asking to allow USB debugging - tap **Allow**
+### Enabling Developer Options
 
-### 3. Forward ADB Ports for Expo
+1. On your Android device, go to **Settings** > **About phone**
+2. Locate the **Build number** entry (this might be under "Software information" on some devices)
+3. Tap **Build number** 7 times until you see a message that says "You are now a developer!"
+4. Go back to the main Settings screen, you should now see **Developer options**
 
-Once your device is connected, you need to forward the required ports through ADB:
+### Enabling USB Debugging
 
-```bash
-# Forward the Metro Bundler port (5000)
-adb reverse tcp:5000 tcp:5000
+1. Go to **Settings** > **Developer options**
+2. Enable the **USB debugging** toggle
+3. (Optional but recommended) Enable **Stay awake** to keep the screen on while charging
 
-# Forward the dev server port (19000)
-adb reverse tcp:19000 tcp:19000
+### Connecting Your Device
 
-# Forward the dev socket port (19001)
-adb reverse tcp:19001 tcp:19001
+1. Connect your device to your computer via USB
+2. When prompted on your device, tap **Allow** to authorize USB debugging
+3. (Optional) Check "Always allow from this computer" to avoid future prompts
 
-# Forward the Expo Developer Tools port (19002)
-adb reverse tcp:19002 tcp:19002
-```
+### Testing the Connection
 
-### 4. Start the Application with USB Debugging Support
-
-In your ConnectivityApp project:
-
-1. Run the start script that uses the `--localhost` flag:
-   ```bash
-   # On Linux/macOS:
-   ./start.sh
-   
-   # On Windows:
-   start.bat
+1. Open a terminal/command prompt and run:
    ```
-
-2. Alternatively, run the Expo command directly:
-   ```bash
-   npx expo start --port=5000 --localhost
-   ```
-
-The `--localhost` flag tells Expo to send your app to your mobile device over USB, rather than over LAN.
-
-### 5. Connect Your Device to Expo
-
-There are two ways to connect:
-
-#### Option 1: Using Expo Go
-1. Open the **Expo Go** app on your Android device
-2. Tap on **Scan QR Code** and scan the QR code shown in your terminal
-
-#### Option 2: Using Expo Go's Development URL
-1. Open the **Expo Go** app on your Android device
-2. Tap on the **Profile** tab
-3. Tap on **Enter URL manually**
-4. Enter: `exp://127.0.0.1:5000`
-
-### 6. Verify Connection
-
-Once connected, you should see the app loading on your device. You'll also see console logs from your device appearing in your terminal window.
-
-## Debugging Tips
-
-1. **Check Device Connection**:
-   ```bash
    adb devices
    ```
-   This should list your connected device.
+2. You should see your device listed with a device ID and "device" status
+3. If it shows "unauthorized", check your device for the authorization prompt
 
-2. **Reset ADB if Connection Issues Occur**:
-   ```bash
-   adb kill-server
-   adb start-server
+### Running the App via USB Debugging
+
+Use the provided script to simplify USB debugging:
+
+**For Windows:**
+```
+start_usb_debug.bat
+```
+
+**For macOS/Linux:**
+```
+./start_usb_debug.sh
+```
+
+This script will:
+1. Ensure ADB is running
+2. Detect connected devices
+3. Install and launch the app on your device
+4. Start logcat to view app logs
+
+## iOS USB Debugging Setup
+
+### Prerequisites
+
+- Mac computer (required for iOS development)
+- [Xcode](https://apps.apple.com/us/app/xcode/id497799835) installed
+- USB cable (preferably the one that came with your device)
+- iOS device (iPhone or iPad)
+- Apple Developer account (free account works for development)
+
+### Preparing Your iOS Device
+
+1. Connect your iOS device to your Mac
+2. Open **Settings** on your iOS device
+3. Go to **Privacy** > **Developer Mode** and enable it (iOS 16+ only)
+4. When prompted, restart your device
+
+### Configuring Xcode
+
+1. Open Xcode and go to **Preferences** > **Accounts**
+2. Add your Apple ID if it's not already there
+3. Select your Apple ID and click **Manage Certificates**
+4. Click the + button to create a new Apple Development Certificate if you don't have one
+
+### Running the App on Your iOS Device
+
+1. Open the project in Xcode:
    ```
-
-3. **Check Metro Bundler Status**:
-   Make sure the Metro Bundler is running with the QR code displayed in your terminal.
-
-4. **Reload App**:
-   - In Expo Go, shake your device to open the developer menu
-   - Tap **Reload** to refresh the app
-
-5. **View Detailed Logs**:
-   ```bash
-   adb logcat *:E
+   cd ios
+   open ConnectivityApp.xcworkspace
    ```
-   This shows error logs from your device.
+2. Select your connected iOS device from the device dropdown in the toolbar
+3. Update the bundle identifier if needed (should be unique)
+4. In **Signing & Capabilities** tab, select your personal team
+5. Click the Play button to build and run the app on your device
 
-## Additional Notes for Bluetooth and WiFi Testing
+## Common USB Debugging Issues and Solutions
 
-- For Bluetooth and WiFi functionality, your app requires permissions that should be granted when prompted
-- For Android 12+, you might need to enable precise location in the device settings
-- When testing Bluetooth functionality, make sure Bluetooth is enabled on your device
-- For WiFi scanning, you need to have location services enabled on your device
+### Android Issues
 
-## Troubleshooting
+1. **Device Not Detected**
+   - Try a different USB cable (some cables are charge-only)
+   - Try a different USB port on your computer
+   - Restart ADB with:
+     ```
+     adb kill-server
+     adb start-server
+     ```
+   - Install/update USB drivers for your device:
+     - [Google USB Driver](https://developer.android.com/studio/run/win-usb)
+     - Or search for "[your device] USB driver"
 
-- **Connection Refused**: Check if the port forwarding is properly set up with ADB
-- **Timeout Error**: Try restarting the Metro Bundler and reconnecting your device
-- **Module Not Found**: Try clearing the Metro Bundler cache with `npx expo start -c`
-- **Permission Issues**: Make sure all required permissions are granted in your device settings
+2. **Installation Failures**
+   - Ensure the app is not already installed on the device or uninstall it
+   - Check for sufficient storage space on the device
+   - Enable "Install via USB" in Developer options
+
+3. **Permission Issues**
+   - For Bluetooth and WiFi testing, location permissions must be granted at runtime
+   - For Android 10+ (API level 29+), background location permission is needed for Bluetooth scanning
+   - For Android 12+ (API level 31+), BLUETOOTH_SCAN and BLUETOOTH_CONNECT permissions are required
+
+### iOS Issues
+
+1. **Trust Issues**
+   - When connecting to a Mac for the first time, you might need to "Trust" the computer on your iOS device
+   - If prompted, enter your device passcode to continue
+
+2. **Signing Issues**
+   - If you get a "Provisioning profile" error, ensure your Apple ID is selected in the Signing & Capabilities tab
+   - You may need to create a development certificate and provisioning profile
+
+3. **App Won't Install**
+   - Delete any previous versions of the app from your device
+   - Restart your iOS device and try again
+   - Check that your device is running a compatible iOS version
+
+## Advanced Debugging Techniques
+
+### Viewing Logs in Real-time
+
+#### Android Logs
+```
+adb logcat -v time | grep "ConnectivityApp"
+```
+
+Or use the color-coded logs with the provided script:
+```
+./adb_logs.sh
+```
+
+#### iOS Logs
+In Xcode, open the console window (Cmd+Shift+C) while your device is connected and the app is running.
+
+### Testing Bluetooth Functionality
+
+1. Pair your device with another Bluetooth device before testing
+2. Use known-working Bluetooth devices for initial testing
+3. Test with a variety of Bluetooth device types (headphones, speakers, etc.)
+
+### Testing WiFi Functionality
+
+1. Have multiple WiFi networks available for testing (including 2.4GHz and 5GHz)
+2. Set up a test network with a mobile hotspot if needed
+3. Test both WPA/WPA2 and WPA3 networks if available
+
+## USB Debugging Scripts
+
+This project includes several scripts to facilitate USB debugging:
+
+- `start_usb_debug.sh` / `start_usb_debug.bat`: Start debugging on a connected USB device
+- `build_debug.sh` / `build_debug.bat`: Build with verbose logging for troubleshooting
+- `adb_logs.sh` / `adb_logs.bat`: View filtered, color-coded logs from the connected device
+
+## Additional Resources
+
+- [Android Developer: Run Apps on Hardware Device](https://developer.android.com/studio/run/device)
+- [Android Developer: Debugging](https://developer.android.com/studio/debug)
+- [Apple Developer: Running Your App in the Simulator or on a Device](https://developer.apple.com/documentation/xcode/running-your-app-in-the-simulator-or-on-a-device)
+- [ADB Command-Line Reference](https://developer.android.com/studio/command-line/adb)

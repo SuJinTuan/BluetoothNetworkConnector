@@ -1,83 +1,98 @@
 @echo off
-REM ConnectivityApp USB Debugging Script for Windows
-REM This script provides a streamlined setup for USB debugging
+SETLOCAL EnableDelayedExpansion
 
-title ConnectivityApp USB Debugging Setup
+:: Colors for console output
+set "GREEN=[32m"
+set "YELLOW=[33m"
+set "RED=[31m"
+set "BLUE=[34m"
+set "NC=[0m"
 
-echo =================================================
-echo     ConnectivityApp USB Debugging Setup Script
-echo =================================================
+:: Print banner
+echo %BLUE%===================================%NC%
+echo %BLUE%  ConnectivityApp USB Debug Tool   %NC%
+echo %BLUE%===================================%NC%
 
-REM Check for adb
-where adb >nul 2>&1
+:: Check if ADB is available
+where adb >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
-    echo Android Debug Bridge (adb) is not installed or not in PATH.
-    echo Please install Android SDK Platform Tools to use USB debugging.
-    echo Visit: https://developer.android.com/studio/releases/platform-tools
-    pause
-    exit /b
+    echo %RED%ADB is not installed or not in PATH.%NC%
+    echo %YELLOW%Please install Android SDK Platform Tools.%NC%
+    goto :end
 )
 
-REM Check for connected devices
-echo Checking for connected Android devices...
-adb devices | findstr /r /c:"device$" >nul
-if %ERRORLEVEL% NEQ 0 (
-    echo No Android devices connected.
-    echo Please connect your device via USB and enable USB debugging in Developer options.
-    pause
-    exit /b
+:: Start ADB server if not running
+echo %YELLOW%Starting ADB server...%NC%
+adb start-server
+
+:: Check for connected devices
+echo %YELLOW%Checking for connected devices...%NC%
+for /f "tokens=*" %%a in ('adb devices ^| findstr "device$" ^| findstr /v "List"') do (
+    set "DEVICES=%%a"
 )
 
-echo Found connected device(s):
-adb devices
-
-REM Set up port forwarding
-echo Setting up port forwarding for Expo...
-adb reverse tcp:5000 tcp:5000
-adb reverse tcp:19000 tcp:19000
-adb reverse tcp:19001 tcp:19001
-adb reverse tcp:19002 tcp:19002
-
-echo Port forwarding configured successfully.
-
-REM Check Node.js and dependencies
-echo Checking dependencies...
-where node >nul 2>&1
-if %ERRORLEVEL% NEQ 0 (
-    echo Node.js is not installed. Please install Node.js to run this application.
-    pause
-    exit /b
+if not defined DEVICES (
+    echo %RED%No devices connected!%NC%
+    echo %YELLOW%Please connect an Android device with USB debugging enabled.%NC%
+    goto :end
 )
 
-where npm >nul 2>&1
-if %ERRORLEVEL% NEQ 0 (
-    echo npm is not installed. Please install npm to run this application.
-    pause
-    exit /b
+:: Show connected devices
+echo %GREEN%Found the following devices:%NC%
+adb devices | findstr /v "List"
+
+:: Build the debug APK
+echo %YELLOW%Building debug APK...%NC%
+
+:: Check if APK already exists
+set "APK_PATH=.\android\app\build\outputs\apk\debug\app-debug.apk"
+if not exist "%APK_PATH%" (
+    echo %YELLOW%Debug APK not found. Building now...%NC%
+    
+    :: Build debug APK
+    cd android
+    call gradlew assembleDebug
+    
+    if %ERRORLEVEL% NEQ 0 (
+        echo %RED%Build failed!%NC%
+        cd ..
+        goto :end
+    )
+    
+    cd ..
+    echo %GREEN%Build successful!%NC%
+) else (
+    echo %GREEN%Using existing debug APK.%NC%
 )
 
-REM Check if Expo CLI is installed
-where expo >nul 2>&1
-if %ERRORLEVEL% NEQ 0 (
-    echo Expo CLI is not installed. Installing it now...
-    call npm install -g expo-cli
+:: Install the app on the connected device(s)
+echo %YELLOW%Installing app on connected devices...%NC%
+for /f "tokens=1" %%d in ('adb devices ^| findstr /r /v "List" ^| findstr /r "device$"') do (
+    echo %YELLOW%Installing on device: %%d%NC%
+    adb -s %%d install -r "%APK_PATH%"
+    
+    if %ERRORLEVEL% EQU 0 (
+        echo %GREEN%Installation successful on %%d%NC%
+        
+        :: Start the app
+        echo %YELLOW%Starting app on %%d...%NC%
+        adb -s %%d shell am start -n com.connectivityapp/.MainActivity
+        
+        if %ERRORLEVEL% EQU 0 (
+            echo %GREEN%App started successfully on %%d%NC%
+        ) else (
+            echo %RED%Failed to start app on %%d%NC%
+        )
+    ) else (
+        echo %RED%Installation failed on %%d%NC%
+    )
 )
 
-REM Install dependencies if node_modules doesn't exist
-if not exist "node_modules\" (
-    echo Installing dependencies...
-    call npm install
-)
+:: Show logs
+echo %YELLOW%Showing logs from the app:%NC%
+echo %BLUE%(Press Ctrl+C to stop logging)%NC%
+echo %YELLOW%=============== LOG OUTPUT ===============%NC%
+adb logcat -v time | findstr /r "ConnectivityApp Bluetooth WiFi ReactNative System.err Exception Error"
 
-REM Start the app with localhost for USB debugging
-echo =================================================
-echo Starting ConnectivityApp in USB debugging mode...
-echo When the QR code appears, do ONE of the following:
-echo   1. Scan the QR code with the Expo Go app on a different device
-echo   2. On your connected device, open Expo Go and enter: exp://localhost:5000
-echo =================================================
-
-REM Start the development server
-npx expo start --port=5000 --localhost
-
-pause
+:end
+ENDLOCAL
