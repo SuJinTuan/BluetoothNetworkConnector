@@ -1,6 +1,6 @@
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { unzip } from 'react-native-zip-archive';
+import { unzip, zip } from 'react-native-zip-archive';
 import { Platform } from 'react-native';
 
 class ZipService {
