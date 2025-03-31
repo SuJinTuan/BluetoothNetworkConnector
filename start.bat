@@ -58,7 +58,26 @@ echo   1. Scanning the QR code with Expo Go app (Android) or Camera app (iOS)
 echo   2. Entering the URL in Expo Go: exp://%LOCAL_IP%:5000
 echo =================================================
 
-REM Start the development server
-npx expo start --port=5000 --lan
+REM Ask user for connection method
+echo Choose your connection method:
+echo 1. WiFi connection (LAN)
+echo 2. USB connection (localhost)
+set /p connection_choice="Enter choice (1 or 2): "
+
+if "%connection_choice%"=="1" (
+    echo Starting with LAN connection for wireless debugging...
+    npx expo start --port=5000 --lan
+) else if "%connection_choice%"=="2" (
+    echo Starting with localhost connection for USB debugging...
+    echo Please make sure your device is connected via USB and ADB is configured.
+    echo Run the following commands in a separate terminal if not already done:
+    echo adb reverse tcp:5000 tcp:5000
+    echo adb reverse tcp:19000 tcp:19000
+    echo adb reverse tcp:19001 tcp:19001
+    npx expo start --port=5000 --localhost
+) else (
+    echo Invalid choice. Defaulting to LAN connection...
+    npx expo start --port=5000 --lan
+)
 
 pause
